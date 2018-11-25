@@ -1,6 +1,7 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h> 
 
 //use -lm parameter to compile this program
 
@@ -19,10 +20,10 @@ typedef struct Neuron N;
 //Just N to refer to a Neuron
 
 /*functions*/
-long double n_number(long double input[], double weight[], int baias);
-double activate_function(double n);
+long double n_number(long double input[], int weight[], int baias);
+double activate_function(long double n);
 N * create_empty_levels(N * head);
-N * initialize_level(N * head , int qtde_of_neurons);
+N * initialize_level(N * node , int qtde_of_neurons, long double input[]);
 //
 
 
@@ -36,7 +37,7 @@ int main(int argc, char const *argv[])
 	return 0;
 }
 
-long double n_number(long double input[], double weight[], int baias)
+long double n_number(long double input[], int weight[], int baias)
 {
 	/*
 		This function return the 'n' variable described in Prof. Mendelson article how
@@ -68,7 +69,7 @@ N * create_empty_levels(N * head)
 
 }
 
-N * initialize_level(N * head , int qtde_of_neurons, long double input[])
+N * initialize_level(N * node , int qtde_of_neurons, long double input[])
 {
 	/*
 		We decided to create the hide levels with double-linked-list`s, but why?
@@ -78,8 +79,34 @@ N * initialize_level(N * head , int qtde_of_neurons, long double input[])
 	*/
 	for(size_t i = 0 ; i < qtde_of_neurons ; i++)
 	{
+		if(node == NULL)
+		{	
+			int * weight = (int *) calloc(final_vetor_size , sizeof(int));
+			for(size_t i = 0 ; i < final_vetor_size; i++)
+			{
+				*(weight + i) = (rand() % (16000 - (-16000) + 1)) + (-16000); //this is thie way that i found to generate
+																			//random numbers between -16000 and 16000
+																			// I make this to generate negative numbers to instead
+																			// of onlu positive number unil 32000
+			}
 
-		head->value = activate_function(n_number());
+			node->value = activate_function(n_number(input , weight, rand()));
+			node->next = NULL;
+			node->prev = NULL;
+		}
+		else
+		{
+			node = (N *) malloc(sizeof(N));
+			int * weight = (int *) calloc(final_vetor_size , sizeof(int));
+			for(size_t i = 0 ; i < final_vetor_size; i++)
+			{
+				*(weight + i) = (rand() % (16000 - (-16000) + 1)) + (-16000); 
+			}
+			node->value = activate_function(n_number(input , weight, rand()));
+			node->next = NULL;
+			node->prev = NULL;
+		}
+
 	}
 
 }
