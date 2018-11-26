@@ -9,9 +9,8 @@ struct Neuron
 {
 	//this value just hold the number after the input value 
 	//pass through activate function
-	double value;
+	long double value;
 	struct Neuron * next;
-	struct Neuron * prev;
 };
 
 #define final_vetor_size 536
@@ -22,8 +21,10 @@ typedef struct Neuron N;
 /*functions*/
 long double n_number(long double input[], int weight[], int baias);
 double activate_function(long double n);
-N * create_empty_levels(N * head);
-N * initialize_level(N * node , int qtde_of_neurons, long double input[]);
+N * create_empty_levels();
+N * initialize_hide_level(N * node , int qtde_of_neurons, long double input[]);
+N * data_level(long double input[]);
+N * create_new_neuron(long double input);
 //
 
 
@@ -60,53 +61,59 @@ double activate_function(long double n)
 
 }
 
-N * create_empty_levels(N * head)
+N * create_empty_levels()
 {
-	
-	head = NULL;
-
-	return head;
+	return NULL;
 
 }
 
-N * initialize_level(N * node , int qtde_of_neurons, long double input[])
+N * initialize_hide_level(N * node , int qtde_of_neurons, long double input[])
 {
 	/*
-		We decided to create the hide levels with double-linked-list`s, but why?
+		We decided to create the hide levels with single-linked-list`s, but why?
 		to pass the input for all Neurons in the level, we need a tecnique or a method to
 		access all neurons in the level. So, we use the foward reference  to pass the input value to others
 		neurons in the level, and the behind reference to use in backpropagation
 	*/
 	for(size_t i = 0 ; i < qtde_of_neurons ; i++)
 	{
-		if(node == NULL)
-		{	
-			int * weight = (int *) calloc(final_vetor_size , sizeof(int));
-			for(size_t i = 0 ; i < final_vetor_size; i++)
-			{
-				*(weight + i) = (rand() % (16000 - (-16000) + 1)) + (-16000); //this is thie way that i found to generate
-																			//random numbers between -16000 and 16000
-																			// I make this to generate negative numbers to instead
-																			// of onlu positive number unil 32000
-			}
+		
+		
+	}
 
-			node->value = activate_function(n_number(input , weight, rand()));
-			node->next = NULL;
-			node->prev = NULL;
+}
+
+N * data_level(long double input[])
+{
+	N * node = NULL;
+
+	for(size_t i = 0 ; i < final_vetor_size ; i++)
+	{
+		if(node == NULL)
+		{
+			node = create_new_neuron(input[i]);
+	
+		}
+		else if(node->next == NULL)
+		{
+			node->next = create_new_neuron(input[i]);
+		
 		}
 		else
 		{
-			node = (N *) malloc(sizeof(N));
-			int * weight = (int *) calloc(final_vetor_size , sizeof(int));
-			for(size_t i = 0 ; i < final_vetor_size; i++)
-			{
-				*(weight + i) = (rand() % (16000 - (-16000) + 1)) + (-16000); 
-			}
-			node->value = activate_function(n_number(input , weight, rand()));
-			node->next = NULL;
-			node->prev = NULL;
+			N * temp = node;
+			while(temp->next != NULL) temp = temp->next;
+			temp->next = create_new_neuron(input[i]);
 		}
-
 	}
+	return node;
+}
 
+N * create_new_neuron(long double input)
+{//input is a single value
+	N * new_neuron = (N *) malloc(sizeof(N));
+	new_neuron->value = input;
+	new_neuron->next = NULL;
+
+	return new_neuron;
 }
