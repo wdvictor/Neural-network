@@ -36,17 +36,11 @@ int main(int argc, char const *argv[])
 {
 	time_t t;
 	srand((unsigned) time(&t));
-	//printf("1\n");
 	N * input_data = create_empty_layers(); /*creating the first element to pass to reference to other`s functinos*/
-	//printf("2\n");
 	N * hidden_process = create_empty_layers();
-	//printf("3\n");
 	long double test_vector[] = {2,1, 10, 0 ,-1};
-	//printf("4\n");
 	input_data = data_layer(test_vector);
-	//printf("5\n");
 	hidden_process = create_hidden_layer(5);
-	//printf("6\n");
 	hidden_process = initialize_layer(hidden_process , 5 , 5);
 
   	N * output_layer = create_new_neuron(0);
@@ -98,7 +92,6 @@ N * initialize_layer(N * node , int layer_size, int prev_layer_size)
 	/*now i gonna distribute the vector of weight and baias for the neurons */
 	for(size_t i = 0 ; i < layer_size ; i++)
 	{ 
-		//printf("lv(1)%zu\n", i);
 		long double  * weight = (long double *) malloc(prev_layer_size * sizeof(long double));
 		for(size_t j = 0 ; j < prev_layer_size ; j++)
 		{
@@ -120,18 +113,15 @@ N * initialize_layer(N * node , int layer_size, int prev_layer_size)
 			}
 			else
 			{
-				//printf("lv(3)\n");
+				
 				*(weight + j) = (rand() % (16000 - (-16000) + 1)) + -(16000); 
-				/*A random value between -16000 and 16000*/
-				//printf("lv(4)%Lf\n", *(weight + j));
+				
 			}
 		}
-		//printf("lv(5)\n");
+		
 		temp->weight = weight;
 		temp->baias = (rand() % (16000 - (-16000) + 1)) + -(16000); 
-		//printf("lv(6)\n");
 		temp = temp->next;
-		//printf("lv(Final)\n");
 	}
 	temp = node;
 	return temp;
@@ -171,7 +161,6 @@ N * data_layer(long double input[])
 
 N * create_new_neuron(long double input)
 {
-	/*input is a single value*/
 	N * new_neuron = (N *) malloc(sizeof(N));
 	if (new_neuron == NULL)
 	{
@@ -190,14 +179,12 @@ N * create_new_neuron(long double input)
 
 N * create_hidden_layer(int layer_size)
 {
-	/*this function create the layer with the input in the beginning of the program*/
 	N * layer = NULL;
 	for(size_t i = 0 ; i < layer_size; i ++)
 	{
 		if(layer == NULL)
 		{
 			layer = create_new_neuron(0); 
-			/*it`s just a initialization, what i really need is the list.*/
 		}
 		else if(layer->next == NULL)
 		{
@@ -215,34 +202,23 @@ N * create_hidden_layer(int layer_size)
 
 N * local_inducted_field(N * prev_layer , N * present_layer, int prev_layer_size, int present_layer_size)
 {
-	//printf("LIF(1)\n");
 	N * data_temp = prev_layer;
 	if(prev_layer == NULL) return NULL;
-	//printf("LIF(2)\n");
 	N * present_temp = present_layer;
 	if(present_temp == NULL) return NULL ;
 	long double sum = 0;
-	//printf("LIF(3)\n");
 	for(size_t i = 0 ; i < present_layer_size ; i++)
 	{
 		sum = 0;
-		//printf("----------------------------%zu----------------------------\n",i);
 		for(size_t j = 0 ; j < prev_layer_size ; j++)
 		{
-			//printf("--------------------%zu--------------------\n",j);
 			sum += (data_temp->output * *(present_temp->weight + j));
-			//printf("LIF(6)\n");
 			data_temp = data_temp->next;
 		}
-		//printf("LIF(7)\n");
 		sum += present_temp->baias;
-		//printf("LIF(8)\n");
 		present_temp->output = activate_function(sum);
-		//printf("LIF(9)\n");
 		present_temp = present_temp->next;
-		//printf("LIF(10)\n");
 		data_temp = prev_layer;
-		//printf("LIF(Final)\n");
 	}
 
 	present_temp = present_layer;
