@@ -28,8 +28,8 @@ N * initialize_layer(N * node , int qtde_of_neurons, int prev_layer_size);
 N * data_layer(long double input[]);
 N * create_new_neuron(long double input);
 N * create_hidden_layer(int layer_size);
-void local_inducted_field(N * prev_layer , N * present_layer, int prev_layer_size, int present_layer_size);
-N * output_sinal(N * hidden_layer, N * output_layer);
+N * local_inducted_field(N * prev_layer , N * present_layer, int prev_layer_size, int present_layer_size);
+
 
 
 int main(int argc, char const *argv[])
@@ -49,15 +49,16 @@ int main(int argc, char const *argv[])
 	//printf("6\n");
 	hidden_process = initialize_layer(hidden_process , 5 , 5);
 
-  	N * output_layer = create_empty_layers();
-  	output_layer = initialize_layer(hidden_process, 1 , 5);
+  	N * output_layer = create_new_neuron(0);
+  	output_layer = initialize_layer(output_layer, 1 , 5);
 
 
 
-	local_inducted_field(input_data, hidden_process, 5,  5);
-	local_inducted_field(hidden_process , output_layer , 5 , 1);
+	hidden_process =  local_inducted_field(input_data, hidden_process, 5,  5);
+	output_layer = local_inducted_field(hidden_process , output_layer , 5 , 1);
 
 	printf("S->%Lf\n",output_layer->output);
+	printf("S->%d\n",output_layer->baias);
 
 	N * temp = hidden_process;
 	while(temp != NULL) 
@@ -120,14 +121,14 @@ N * initialize_layer(N * node , int layer_size, int prev_layer_size)
 			else
 			{
 				//printf("lv(3)\n");
-				*(weight + j) = rand() % 5 ;//(rand() % (16000 - (-16000) + 1)) + -(16000); 
+				*(weight + j) = (rand() % (16000 - (-16000) + 1)) + -(16000); 
 				/*A random value between -16000 and 16000*/
 				//printf("lv(4)%Lf\n", *(weight + j));
 			}
 		}
 		//printf("lv(5)\n");
 		temp->weight = weight;
-		temp->baias = rand() % 2 ;//(rand() % (16000 - (-16000) + 1)) + -(16000); 
+		temp->baias = (rand() % (16000 - (-16000) + 1)) + -(16000); 
 		//printf("lv(6)\n");
 		temp = temp->next;
 		//printf("lv(Final)\n");
@@ -212,14 +213,14 @@ N * create_hidden_layer(int layer_size)
 	return layer;
 }
 
-void local_inducted_field(N * prev_layer , N * present_layer, int prev_layer_size, int present_layer_size)
+N * local_inducted_field(N * prev_layer , N * present_layer, int prev_layer_size, int present_layer_size)
 {
 	//printf("LIF(1)\n");
 	N * data_temp = prev_layer;
-	if(prev_layer == NULL) return;
+	if(prev_layer == NULL) return NULL;
 	//printf("LIF(2)\n");
 	N * present_temp = present_layer;
-	if(present_temp == NULL) return ;
+	if(present_temp == NULL) return NULL ;
 	long double sum = 0;
 	//printf("LIF(3)\n");
 	for(size_t i = 0 ; i < present_layer_size ; i++)
@@ -244,6 +245,7 @@ void local_inducted_field(N * prev_layer , N * present_layer, int prev_layer_siz
 		//printf("LIF(Final)\n");
 	}
 
-	
+	present_temp = present_layer;
+	return present_layer;
 }
 
