@@ -12,7 +12,7 @@
 struct Neuron
 {
 
-	long double input; /*the value that enter in the neuron*/
+	long double propagated_value; /*the value that enter in the neuron*/
 	long double output; /*the value that out of the neuron*/
 	int baias;
 	long double * weight;
@@ -26,10 +26,10 @@ typedef struct Neuron N;
 double activate_function(long double n);
 N * create_empty_layers();
 N * initialize_layer(N * node , int qtde_of_neurons, int prev_layer_size);
-N * data_layer(long double input[]);
+N * data_layer(long double normalized_vector[]);
 N * create_new_neuron(long double input);
 N * create_hidden_layer(int layer_size);
-N * local_inducted_field(N * prev_layer , N * present_layer, int prev_layer_size, int present_layer_size);
+N * propagation_of_values(N * layer , N * next_layer, int layer_size, int next_layer_size);
 double error(long double current_error , int expected_output);
 N * output_layer_backpropagation(N * hidden_layer, N * output_layer, int prev_layer_size, double global_error);
 double gradient_output(double global_error , double phi);
@@ -47,55 +47,23 @@ int main(int argc, char const *argv[])
 
 	N * input_data = create_empty_layers(); /*creating the first element to pass to reference to other`s functinos*/
 	N * hidden_layer = create_empty_layers();
-	
-
-	/*the input_data is the first layer of our neural network, is 
-	the layer of the datas*/
+	N * output_layer = create_new_neuron(0);
 	input_data = data_layer(test_vector);
 
-	/*the hidden_layer os the hidden layer of our neural network*/
+	input_data = initialize_layer(input_data, 5, 5);
 
 	hidden_layer = create_hidden_layer(5);
+	hidden_layer = initialize_layer(hidden_layer , 5 , 1);
+  	output_layer = initialize_layer(output_layer, 1, 0);
 
-	/*the initialize_layer function works to distribute the weights and bias
-	to neurons */
-	hidden_layer = initialize_layer(hidden_layer , 5 , 5);
-
-	/*the output_layer is the neuron of the output */
-  	N * output_layer = create_new_neuron(0);
-  	output_layer = initialize_layer(output_layer, 1 , 5);
-
-
-  	/* the local_inducted_field function works to do the calculs of the neural
-		network
-  	 */
-	hidden_layer = local_inducted_field(input_data, hidden_layer, 5,  5);
-	output_layer = local_inducted_field(hidden_layer , output_layer , 5 , 1);
+  	printf("go to input\n");
+	input_data = propagation_of_values(input_data, hidden_layer,  5,  5);
+	printf("go to hidden\n");
+	hidden_layer = propagation_of_values(hidden_layer, output_layer,  5,  1);
 
 
-
-	global_error = error(output_layer->output , 1);
+	global_error = error(output_layer->propagated_value , 1);
 	printf("ERROR = %lf\n", global_error);
-
-	size_t i = 0;
-	if(global_error < 1)
-	{
-		while(i < 1)
-		{
-			output_layer = output_layer_backpropagation(hidden_layer, output_layer,  5,  global_error);
-			hidden_layer = hidden_layer_backpropagation(hidden_layer, input_data, output_layer, 5, 5, gradient_output(global_error , phi_line(output_layer->output)));
-
-			hidden_layer = local_inducted_field(input_data, hidden_layer, 5,  5);
-			output_layer = local_inducted_field(hidden_layer , output_layer , 5 , 1);
-
-			global_error = error(output_layer->output , 1);
-			printf("ERROR = %lf\n", global_error);
-			i++;
-		}
-	
-	}
-
-
 
 
 
@@ -115,17 +83,17 @@ N * create_empty_layers()
 
 }
 
-N * initialize_layer(N * node , int layer_size, int prev_layer_size)
+N * initialize_layer(N * node , int layer_size, int next_layer_size)
 {
-	/*The prev_layer_size variable is use to take the quantity
-	of neuron in the previously layer
+	/*The next layer size variable is use to take the quantity
+	of neuron in the next layer
 	*/
 	N * temp = node;
 	/*now i gonna distribute the vector of weight and baias for the neurons */
 	for(size_t i = 0 ; i < layer_size ; i++)
 	{ 
-		long double  * weight = (long double *) malloc(prev_layer_size * sizeof(long double));
-		for(size_t j = 0 ; j < prev_layer_size ; j++)
+		long double  * weight = (long double *) malloc(next_layer_size * sizeof(long double));
+		for(size_t j = 0 ; j < next_layer_size ; j++)
 		{
 			/*Inside this for I gonna distribute the weight`s for all neuron. But to see
 			more clearly what i do, let`s talk about more the theory.
@@ -152,8 +120,10 @@ N * initialize_layer(N * node , int layer_size, int prev_layer_size)
 		}
 		
 		temp->weight = weight;
-		temp->baias = (rand() % (16000 - (-16000) + 1)) + -(16000); 
+		temp->baias = (rand() % (16000 - (-16000) + 1)) + -(16000); //the baias in the data_layer is not used, is only used when is the 
+																	//hidden layer or the output layer
 		temp = temp->next;
+
 	}
 	temp = node;
 	return temp;
@@ -179,6 +149,7 @@ N * data_layer(long double input[])
 			temp = node;
 			while(temp->next != NULL) temp = temp->next;
 			temp->next = create_new_neuron(input[i]);
+			temp = node;
 		}
 	}
 	return node;
@@ -192,7 +163,7 @@ N * create_new_neuron(long double input)
 		printf("Failed to alloc node.\n");
 		return NULL;
 	}
-	new_neuron->input = input;
+	new_neuron->propagated_value = input;
 	new_neuron->output = input;
 	new_neuron->weight = NULL;
 	new_neuron->baias = 0;
@@ -222,39 +193,44 @@ N * create_hidden_layer(int layer_size)
 	return layer;
 }
 
-N * local_inducted_field(N * prev_layer , N * present_layer, int prev_layer_size, int present_layer_size)
+N * propagation_of_values(N * layer , N * next_layer, int layer_size, int next_layer_size)
 {
-	N * data_temp = prev_layer;
-	if(prev_layer == NULL) return NULL;
+	N * data_temp = layer;
+	if(data_temp == NULL) return NULL;
 
-	N * present_temp = present_layer;
-	if(present_temp == NULL) return NULL ;
+	N * next_layer_temp = next_layer;
+	if(next_layer_temp == NULL) return NULL ;
 
 	long double sum = 0;
 
-	for(size_t i = 0 ; i < present_layer_size ; i++)
+	for(size_t i = 0 ; i < next_layer_size ; i++)
 	{
 		sum = 0;
-		for(size_t j = 0 ; j < prev_layer_size ; j++)
+		for(size_t j = 0 ; j < layer_size ; j++)
 		{
-			sum += (data_temp->output * *(present_temp->weight + j));
-			data_temp = data_temp->next;
+			sum += (data_temp->output * *(data_temp->weight + i)); //sum the data with the weight in the position of the neuron(represent by i)
+			
+			data_temp = data_temp->next; //pass to next data
+			
 		}
-		sum += present_temp->baias;
-		present_temp->input = sum;  
-		present_temp->output = activate_function(sum);
-		present_temp = present_temp->next;
-		data_temp = prev_layer;
+		
+		sum += next_layer_temp->baias;    //add the baias of the neuron
+		next_layer_temp->propagated_value = sum;  //storage the value on the neuron for future calculus
+		next_layer_temp->output = activate_function(sum); //the output is the value after the activate function
+		next_layer_temp = next_layer_temp->next; //pass to next neuron 
+		data_temp = layer; //return the data_temp to first data node to do the calculus again in the next neuron
+
+		
+		
+
 	}
 
-	present_temp = present_layer;
-	return present_layer;
+	next_layer_temp = next_layer ; //make the present_layer reference to the first node again to return the reference
+	return next_layer_temp;
 }
 
 double error(long double current_error , int expected_output)
 {
-	printf("-->%Lf\n", current_error);
-	printf("-->%d\n", expected_output);
 	return current_error - expected_output;
 }
 
@@ -294,7 +270,7 @@ N * output_layer_backpropagation(N * hidden_layer, N * output_layer, int prev_la
 		printf("gradient_output = %lf\n", gradient_output(global_error , phi_line(output_layer->output)));
 		printf("phi_line = %lf\n", phi_line(output_layer->output));
 		printf("temp->output = %Lf\n", temp->output);
-		printf("temp->input= %Lf\n", temp->input);
+		printf("temp->input= %Lf\n", temp->propagated_value);
 		printf("temp->baias=%d\n", temp->baias);
 		printf("temp->weight(1)=%Lf\n", *(temp->weight+0) );
 		printf("temp->weight(2)=%Lf\n", *(temp->weight+1) );
@@ -327,7 +303,7 @@ N * hidden_layer_backpropagation(N * hidden_layer, N * data_layer, N * output_la
 
 	for(size_t i = 0 ; i < hidden_layer_size ; i++) //is the size of the hidden layer,is the given number in the initializating of the program
 	{
-		ghl = gradient_hidden_layer(phi_line(hidden_temp->input), output_gradient , *(output_layer->weight + i));
+		ghl = gradient_hidden_layer(phi_line(hidden_temp->propagated_value), output_gradient , *(output_layer->weight + i));
 		
 		for(size_t j = 0 ; j < prev_layer_size ; j++) 
 			/*the prev_layer_size is the size of the prev layer, in this case is the size of the data_layer, or 536 in case of 
