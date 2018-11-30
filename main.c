@@ -14,7 +14,7 @@ struct Neuron
 
 	long double propagated_value; /*the value that enter in the neuron*/
 	long double output; /*the value that out of the neuron*/
-	int baias;
+	double baias;
 	long double * weight;
 	struct Neuron * next;
 };
@@ -31,11 +31,11 @@ N * create_new_neuron(long double input);
 N * create_hidden_layer(int layer_size);
 N * propagation_of_values(N * layer , N * next_layer, int layer_size, int next_layer_size);
 double error(long double current_error , int expected_output);
-N * output_layer_backpropagation(N * hidden_layer, N * output_layer, int prev_layer_size, double global_error);
+N * output_layer_backpropagation(N * hidden_layer, N * output_layer, double global_error, int hidden_layer_size, double go);
 double gradient_output(double global_error , double phi);
 double phi_line(double n);
-double gradient_hidden_layer(double global_error , double phi, double output_gradient);
-N * hidden_layer_backpropagation(N * hidden_layer, N * data_layer, N * output_layer, int prev_layer_size, int hidden_layer_size, double output_gradient);
+double gradient_hidden_layer(long double weight , double phi, double output_gradient);
+N * backpropagation(N * layer, N * next_layer, double global_error, int layer_size , int next_layer_size, double go);
 
 
 int main(int argc, char const *argv[])
@@ -56,15 +56,28 @@ int main(int argc, char const *argv[])
 	hidden_layer = initialize_layer(hidden_layer , 5 , 1);
   	output_layer = initialize_layer(output_layer, 1, 0);
 
-  	printf("go to input\n");
+  	
+	
+
 	input_data = propagation_of_values(input_data, hidden_layer,  5,  5);
-	printf("go to hidden\n");
 	hidden_layer = propagation_of_values(hidden_layer, output_layer,  5,  1);
 
-
-	global_error = error(output_layer->propagated_value , 1);
+	global_error = error(output_layer->output , 1);
 	printf("ERROR = %lf\n", global_error);
+	double go = gradient_output(global_error , phi_line(output_layer->output));
+//-----------------------------------until here is fine, the propagation works appropriately--------------------------
+	
+	while(global_error < 0)
+	{
+		
+		output_layer = output_layer_backpropagation(hidden_layer, output_layer, global_error, 5, go);
+		input_data = backpropagation(input_data, hidden_layer, global_error, 5 , 5, go);
+		input_data = propagation_of_values(input_data, hidden_layer,  5,  5);
+		hidden_layer = propagation_of_values(hidden_layer, output_layer,  5,  1);
+		global_error = error(output_layer->output , 1);
+		printf("ERROR = %lf\n", global_error);
 
+	}
 
 
 	return 0;
@@ -95,17 +108,7 @@ N * initialize_layer(N * node , int layer_size, int next_layer_size)
 		long double  * weight = (long double *) malloc(next_layer_size * sizeof(long double));
 		for(size_t j = 0 ; j < next_layer_size ; j++)
 		{
-			/*Inside this for I gonna distribute the weight`s for all neuron. But to see
-			more clearly what i do, let`s talk about more the theory.
-			All neuron in the region on the input(the data layer) pass his data to the hidden
-			layer multiplying by a weight. This weights is in the graphical representetion of
-			neural networks is the edges(rows). To implement this is C, i make the neuron of the 
-			hidden layer have an array with values that represent the "edges" of the previously
-			layer. When the data pass to data layer to the hidden layer, it`s multiplying by this
-			weights in the vector in current position of the neuron. For example: if the neuron 2
-			of the data layer is passing his value to hidden_layer, is going be multiplicated by the weight
-			in position 2 in the vector( 1 if the vector is zero indexed)*/
-			//printf("lv(2)%zu\n", j);
+			
 			if(temp == NULL)
 			{
 				printf("NULL\n");
@@ -225,8 +228,8 @@ N * propagation_of_values(N * layer , N * next_layer, int layer_size, int next_l
 
 	}
 
-	next_layer_temp = next_layer ; //make the present_layer reference to the first node again to return the reference
-	return next_layer_temp;
+	data_temp = layer; //make the present_layer reference to the first node again to return the reference
+	return data_temp;
 }
 
 double error(long double current_error , int expected_output)
@@ -251,77 +254,62 @@ double gradient_output(double global_error , double phi)
 	return global_error * phi;
 }
 
-double gradient_hidden_layer(double global_error , double phi, double output_gradient)
+double gradient_hidden_layer(long double weight , double phi, double output_gradient)
 {	
-	return global_error * phi * output_gradient;
+	return  phi * output_gradient * weight;
 }
 
-N * output_layer_backpropagation(N * hidden_layer, N * output_layer, int prev_layer_size, double global_error)
+N * output_layer_backpropagation(N * hidden_layer, N * output_layer, double global_error, int hidden_layer_size, double go)
 {
-	double learn_rate = 0.2;
 	N * temp = hidden_layer;
+	double learn_rate = 0.2;
 	double delta = 0;
-	for(size_t i = 0; i < prev_layer_size ; i++)
+	for(size_t i = 0 ; i < hidden_layer_size ; i++)
 	{
+		printf("1.1\n");
 		delta = 0;
-		printf("%zu*********************************\n", i);
-		printf("learn_rate = %lf\n", learn_rate);
-		printf("global_error = %lf\n", global_error);
-		printf("gradient_output = %lf\n", gradient_output(global_error , phi_line(output_layer->output)));
-		printf("phi_line = %lf\n", phi_line(output_layer->output));
-		printf("temp->output = %Lf\n", temp->output);
-		printf("temp->input= %Lf\n", temp->propagated_value);
-		printf("temp->baias=%d\n", temp->baias);
-		printf("temp->weight(1)=%Lf\n", *(temp->weight+0) );
-		printf("temp->weight(2)=%Lf\n", *(temp->weight+1) );
-		printf("temp->weight(3)=%Lf\n", *(temp->weight+2) );
-		printf("temp->weight(4)=%Lf\n", *(temp->weight+3) );
-		printf("temp->weight(5)=%Lf\n", *(temp->weight+4) );
-		
-		printf("*********************************\n");
-		delta = (double) (learn_rate * global_error *  gradient_output(global_error , phi_line(output_layer->output)) * temp->output);
-		printf("Delta = %lf\n", delta);
-		*(output_layer->weight + i) += delta;
+		delta = 2 * learn_rate * temp->output * go;
+		printf("1.2\n");
+		*(temp->weight + 0) += delta; //the neurons just have one weight because the output_layer just have one neuron
+		printf("1.3\n");
 		temp = temp->next;
 	}
-	double baias_delta = 0;
-	baias_delta = (learn_rate * global_error * gradient_output(global_error , phi_line(output_layer->output)));
-	output_layer->baias += baias_delta; 
+	delta = 0;
+	printf("1.4\n");
+	delta = 2 * learn_rate * go;
+	printf("1.5\n");
+	output_layer->baias += delta;
 
-	return output_layer;
+	temp = hidden_layer;
+	return temp;
 }
 
 
-N * hidden_layer_backpropagation(N * hidden_layer, N * data_layer, N * output_layer, int prev_layer_size, int hidden_layer_size, double output_gradient)
+N * backpropagation(N * layer, N * next_layer, double global_error, int layer_size , int next_layer_size, double go)
 {
-	//stoped here
+	N * layer_temp = layer;
+	N * next_layer_temp = next_layer;
 	double learn_rate = 0.2;
-	N * hidden_temp = hidden_layer;
-	N * data_temp = data_layer;
 	double delta = 0;
-	double ghl = 0; //gradient hidden_layer
 
-	for(size_t i = 0 ; i < hidden_layer_size ; i++) //is the size of the hidden layer,is the given number in the initializating of the program
+	for(size_t i = 0 ; i < layer_size ; i++)
 	{
-		ghl = gradient_hidden_layer(phi_line(hidden_temp->propagated_value), output_gradient , *(output_layer->weight + i));
-		
-		for(size_t j = 0 ; j < prev_layer_size ; j++) 
-			/*the prev_layer_size is the size of the prev layer, in this case is the size of the data_layer, or 536 in case of 
-			the normalized vector
-			*/
-
+		for(size_t j = 0 ; j < next_layer_size ; j++)
 		{
-			delta = ((-1)*learn_rate * data_temp->output * ghl); // formula 5.35 of the mentioned book
-			*(hidden_temp->weight + j) -= delta; //update the value of the weight
-			data_temp = data_temp->next; //pass to next data
 			delta = 0;
+			delta = 2 * learn_rate * layer_temp->propagated_value * gradient_hidden_layer( *(next_layer_temp->weight), phi_line(next_layer_temp->output), go);
+			*(layer_temp->weight + j) += delta;
+			delta = 0;
+			delta = 2 * learn_rate * gradient_hidden_layer( *(next_layer_temp->weight + 0), phi_line(next_layer_temp->output), go);
+			next_layer_temp->baias += delta;
+			next_layer_temp = next_layer_temp->next;
 		}
-		data_temp = data_layer;  //make the data_temp equal to data_layer again to do another loop
-		hidden_temp = hidden_temp->next;  //pass to the next neuron
+		next_layer_temp = next_layer;
+		layer_temp = layer_temp->next;
 
 	}
-	hidden_temp = hidden_layer;
 
-	return hidden_temp;
+	layer_temp = layer;
+	return layer_temp;
 
 }
